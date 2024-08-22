@@ -1,0 +1,6 @@
+Flask
+openai==0.28.1
+streamlit
+easyocr
+Pillow
+python-dotenv

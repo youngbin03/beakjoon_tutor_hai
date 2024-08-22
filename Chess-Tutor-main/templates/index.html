@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GPT API Chat</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+      }
+
+      .chat-container {
+        background-color: #ffffff;
+        border-radius: 5px;
+        padding: 20px;
+        width: 80%;
+        max-width: 1000px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        max-height: 100%;
+        max-width: 100%;
+        overflow-y: auto;
+      }
+
+      h1 {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+
+      #chat-form {
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 20px;
+      }
+
+      #user-input {
+        margin-bottom: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        padding: 10px;
+        resize: vertical;
+      }
+
+      #image-upload {
+        margin-bottom: 10px;
+      }
+
+      #submitBtn {
+        background-color: #3498db;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        padding: 10px 15px;
+        cursor: pointer;
+      }
+
+      #submitBtn:hover {
+        background-color: #2980b9;
+      }
+
+      #result {
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        padding: 20px;
+        background-color: #f8f8f8;
+        min-height: 150px;
+        overflow-wrap: break-word;
+        position: relative;
+      }
+
+      #loading {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        display: none;
+      }
+
+      .loading-spinner {
+        border: 6px solid #f3f3f3;
+        border-top: 6px solid #3498db;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+
+      #python-tutor-embed {
+        width: 100%;
+        height: 600px;
+      }
+
+      #uploaded-image {
+        max-width: 80%;
+        height: auto;
+        margin-top: 5px;
+        margin-bottom: 10px;
+        border-radius: 5px;
+        max-height: 200px;
+      }
+
+      #copyCodeBtn {
+        background-color: #3498db;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        padding: 10px 15px;
+        cursor: pointer;
+        margin-top: 10px;
+        display: none;
+      }
+
+      #copyCodeBtn:hover {
+        background-color: #2980b9;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="chat-container">
+      <h1> HAI SUMMER VACATION PROJECT 🚀</h1>
+      <form id="chat-form" enctype="multipart/form-data">
+        <textarea id="user-input" name="user_input" placeholder="질문을 입력하세요..." rows="1"></textarea>
+        <input type="file" id="image-upload" name="image_upload" accept="image/*" />
+        <img id="uploaded-image" style="display: none;" />
+        <button type="submit" id="submitBtn">Send</button>
+      </form>
+      <div id="result">
+        <div id="loading">
+          <div class="loading-spinner"></div>
+        </div>
+        <div id="description"></div>
+        
+        <button id="copyCodeBtn" style="display: none;">코드 복사하기</button>
+      </div>
+      <div id="python-tutor-embed-container"></div>
+    </div>
+    <div id="madeByText" style="text-align: center; color: #777; position: fixed; bottom: 0; width: 100%; font-size: 12px; display: none; margin-bottom: 20px;"> Made by sinobin</div>
+    <script>
+      window.onload = function () {
+        const form = document.getElementById("chat-form");
+        const userInputField = document.getElementById("user-input");
+        const imageUploadField = document.getElementById("image-upload");
+        const loadingDiv = document.getElementById("loading");
+        const descriptionDiv = document.getElementById("description");
+        const embedContainer = document.getElementById("python-tutor-embed-container");
+        const uploadedImage = document.getElementById("uploaded-image");
+        const copyCodeBtn = document.getElementById("copyCodeBtn");
+        const madeByText = document.getElementById("madeByText");
+
+        userInputField.addEventListener("input", function () {
+            const lines = this.value.split('\n').length;
+            this.rows = lines
+        });
+
+        form.addEventListener("submit", function (event) {
+          event.preventDefault();
+          const userInput = userInputField.value;
+          const imageFile = imageUploadField.files[0]; // 파일 가져오기
+
+          const formData = new FormData();
+          formData.append("user_input", userInput);
+          if (imageFile) {
+            formData.append("image_upload", imageFile);
+          }
+
+          loadingDiv.style.display = "block";
+
+          fetch("/gpt4", {
+            method: "POST",
+            body: formData,
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              descriptionDiv.innerHTML = `<p>${data.description}</p>`;
+
+              const pythonCodeForTutor = `${data.python_code}`;
+              const languageType = `${data.type}`;
+
+              if (languageType == "c") {
+                embedContainer.innerHTML = `<embed id="python-tutor-embed" type="text/html" frameborder="0" src="https://pythontutor.com/iframe-embed.html#code=${encodeURIComponent(pythonCodeForTutor)}&cumulative=false&py=c_gcc9.3.0&curInstr=3" style="width: 100%; height: 600px;"></embed>`;
+              }
+              if (languageType == "python") {
+                embedContainer.innerHTML = `<embed id="python-tutor-embed" type="text/html" frameborder="0" src="https://pythontutor.com/iframe-embed.html#code=${encodeURIComponent(pythonCodeForTutor)}&cumulative=false&py=3&curInstr=3" style="width: 100%; height: 600px;"></embed>`;
+              }
+              if (languageType == "cpp") {
+                embedContainer.innerHTML = `<embed id="python-tutor-embed" type="text/html" frameborder="0" src="https://pythontutor.com/iframe-embed.html#code=${encodeURIComponent(pythonCodeForTutor)}&cumulative=false&py=cpp_g%2B%2B9.3.0&curInstr=3" style="width: 100%; height: 600px;"></embed>`;
+              }
+              if (languageType == "java") {
+                embedContainer.innerHTML = `<embed id="python-tutor-embed" type="text/html" frameborder="0" src="https://pythontutor.com/iframe-embed.html#code=${encodeURIComponent(pythonCodeForTutor)}&cumulative=false&py=java&curInstr=3" style="width: 100%; height: 600px;"></embed>`;
+              }
+
+              // 업로드된 이미지 표시
+              if (imageFile) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                  uploadedImage.src = e.target.result;
+                  uploadedImage.style.display = "block";
+                };
+                reader.readAsDataURL(imageFile);
+              } else {
+                uploadedImage.style.display = "none";
+              }
+
+              // 코드 복사하기 버튼 표시 및 클릭 이벤트 추가
+              copyCodeBtn.style.display = "block";
+              copyCodeBtn.addEventListener("click", function () {
+                const dummyTextArea = document.createElement("textarea");
+                dummyTextArea.value = data.python_code;
+                document.body.appendChild(dummyTextArea);
+                dummyTextArea.select();
+                document.execCommand("copy");
+                document.body.removeChild(dummyTextArea);
+                alert("코드가 복사되었습니다.");
+              });
+
+              // 새로운 embed이 완전히 로드된 후에 로딩 바를 숨김
+              const pythonTutorEmbed = document.getElementById("python-tutor-embed");
+              pythonTutorEmbed.addEventListener("load", function () {
+                loadingDiv.style.display = "none";
+              });
+            })
+            .catch((error) => {
+              console.error("Error fetching GPT-4 response:", error);
+              loadingDiv.style.display = "none";
+            });
+        });
+
+        madeByText.style.display = "block";
+      };
+    </script>
+  </body>
+</html>
